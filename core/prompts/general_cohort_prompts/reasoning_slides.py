@@ -91,7 +91,7 @@ Remember:
 - Strict limit: 157 characters per bullet.
 - Mandatory terms: "Submit Ad creation requests", "Submit On-Demand requests", "Submit Ongoing Post requests".
 - Tailor the content specifically to the business category below.
-
+dont mention "[STRATEGY & REASONING] and all in the content [CLOSING STATEMENT]
 Here is the preprocessed business/context data:
 
 [preprocessed_input]
@@ -179,7 +179,7 @@ Remember:
 - Then, provide the [CLOSING STATEMENT] block with the Headline and Supporting Text.
 - Use the actual Brand Name from the input.
 - Match the tone to the data (Growth vs. Stable vs. Starting).
-
+dont mention "[STRATEGY & REASONING] and all in the content [CLOSING STATEMENT]
 Here is the preprocessed business/context data:
 
 [preprocessed_input]
