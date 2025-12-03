@@ -1255,6 +1255,7 @@ Final checks before you respond:
 - Have you stayed within all character limits?
 - Have you set sections without clear wins to null?
 - Does your footer note synthesize everything into a meaningful conclusion?
+- Make sure you capture and facebook ads and google ads before generating.
 """
 
 
