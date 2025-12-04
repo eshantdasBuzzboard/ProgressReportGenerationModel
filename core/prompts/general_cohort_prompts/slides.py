@@ -1,5 +1,19 @@
 from langchain_core.prompts import ChatPromptTemplate
 
+general_many_slides_info = """
+Here are some additional details to start with below
+Google Ads                 
+Google Ads Clicks
+Google Ads CPM
+Google Ads CPC
+These are like google ads information below
+Google Search Impressions
+Google Map Impressions
+Google Site Clicks
+Google Call Clicks
+"""
+
+
 business_info_extraction_system_prompt = """
 You are a data extraction specialist. Your task is to extract ONLY the fields required 
 for the MarketingReport and BusinessInfo Pydantic models.
@@ -143,6 +157,7 @@ Ensure 4–5 segments, chronological order, and strict character limits.
 
 heres_what_we_delivered_prompt = ChatPromptTemplate.from_messages([
     ("system", heres_what_we_delivered_system_prompt),
+    ("human", general_many_slides_info),
     ("human", heres_what_we_delivered_user_prompt),
 ])
 
@@ -303,6 +318,7 @@ Remember:
 
 how_your_ads_performed_prompt = ChatPromptTemplate.from_messages([
     ("system", how_your_ads_performed_system_prompt),
+    ("human", general_many_slides_info),
     ("human", how_your_ads_performed_user_prompt),
 ])
 
@@ -525,6 +541,7 @@ Remember:
 
 action_plan_prompt = ChatPromptTemplate.from_messages([
     ("system", action_plan_system_prompt),
+    ("human", general_many_slides_info),
     ("human", action_plan_user_prompt),
 ])
 
@@ -854,6 +871,7 @@ Remember:
 
 areas_needing_attention_prompt = ChatPromptTemplate.from_messages([
     ("system", areas_needing_attention_system_prompt),
+    ("human", general_many_slides_info),
     ("human", areas_needing_attention_user_prompt),
 ])
 
@@ -1043,6 +1061,7 @@ Produce your output with this reasoning reflected in how you frame each insight.
 
 performance_summary_prompt = ChatPromptTemplate.from_messages([
     ("system", performance_summary_system_prompt),
+    ("human", general_many_slides_info),
     ("human", performance_summary_user_prompt),
 ])
 
@@ -1261,6 +1280,7 @@ Final checks before you respond:
 
 big_wins_prompt = ChatPromptTemplate.from_messages([
     ("system", big_wins_system_prompt),
+    ("human", general_many_slides_info),
     ("human", big_wins_user_prompt),
 ])
 
@@ -1428,6 +1448,7 @@ Remember:
 
 growth_at_glance_prompt = ChatPromptTemplate.from_messages([
     ("system", growth_at_glance_system_prompt),
+    ("human", general_many_slides_info),
     ("human", growth_at_glance_user_prompt),
 ])
 
@@ -1499,5 +1520,6 @@ Here is the Google Reviews and reputation data from Ignite:
 
 what_drove_results_prompt = ChatPromptTemplate.from_messages([
     ("system", what_drove_results_system_prompt),
+    ("human", general_many_slides_info),
     ("human", what_drove_results_user_prompt),
 ])
