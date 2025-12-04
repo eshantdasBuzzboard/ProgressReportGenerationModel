@@ -124,6 +124,17 @@ async def main():
 
             category, cohort = await asyncio.gather(category_task, cohort_task)
             logger.info(f"Category: {category['category']}, Cohort: {cohort}")
+        with st.expander("📊 Preprocessed Input", expanded=False):
+            if new_response:
+                st.json(new_response)
+                # Collapsible section for Category and Cohort
+        with st.expander("📈 Category & Cohort Analysis", expanded=False):
+            if category:
+                st.subheader("Category (Uptrend or Downtrend)")
+                st.json(category)
+            if cohort:
+                st.subheader("Cohort Number")
+                st.text(cohort)
 
         with st.spinner("Generating the Generic slides"):
             # Report Generation
@@ -158,6 +169,9 @@ async def main():
             )
 
             logger.info("Analysis completed successfully")
+        with st.expander("📈 Report before checking guidelines", expanded=False):
+            if complete_report_without_checking_guidelines:
+                st.json(complete_report_without_checking_guidelines)
         with st.spinner(
             "Checking Guidlines and returning the final report with reasoning"
         ):
@@ -168,21 +182,6 @@ async def main():
         # Display results with collapsible sections
         st.success("✅ Analysis completed successfully!")
 
-        # Collapsible section for Preprocessed Input
-        with st.expander("📊 Preprocessed Input", expanded=False):
-            if new_response:
-                st.json(new_response)
-
-        # Collapsible section for Category and Cohort
-        with st.expander("📈 Category & Cohort Analysis", expanded=False):
-            if category:
-                st.subheader("Category (Uptrend or Downtrend)")
-                st.json(category)
-            if cohort:
-                st.subheader("Cohort Number")
-                st.text(cohort)
-        with st.expander("📈 Report before checking guidelines", expanded=False):
-            st.json(complete_report_without_checking_guidelines)
         # Display Complete Merged Report (expanded by default)
         st.header("📋 Complete Report")
         if complete_report:
