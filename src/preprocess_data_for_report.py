@@ -159,23 +159,32 @@ def process_data(data):
             "resolved": delivery.get("resolved"),
         })
 
+    # Process recent_post_content - keep as-is if present, otherwise None
+    recent_post_content = data.get("recent_post_content", None)
+
     # Return complete processed data
     return {
         "business_info": data.get("business_info", {}),
         "about_this_business": data.get("about_this_business", ""),
         "social_stats": processed_stats,
         "delivery_dates": processed_delivery,
+        "recent_post_content": recent_post_content,
     }
 
 
 async def return_preprocess_data(
-    ignite_api_data, quicksight_data_declining, zylo_v6_data, msp_data=""
+    ignite_api_data,
+    quicksight_data_declining,
+    zylo_v6_data,
+    zylo_v6_post_content=None,
+    msp_data="",
 ):
     response = await preprocess_chain(
         ignite_api_data=ignite_api_data,
         quick_sight_data=quicksight_data_declining,
         zylo_v6_data=zylo_v6_data,
         msp_data=msp_data,
+        zylo_v6_post_content=zylo_v6_post_content,
     )
     new_response = process_data(response)
     social_stats = new_response["social_stats"]

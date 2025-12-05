@@ -92,6 +92,10 @@ class BusinessSnapshot(BaseModel):
     delivery_dates: list[DeliveryItem] = Field(
         ..., description="All delivery/resolution entries."
     )
+    recent_post_content: list[str] | None = Field(
+        None,
+        description="List of recent social media post content strings with dates removed. Returns null if no post content is available.",
+    )
 
 
 class CategoryIdentification(BaseModel):

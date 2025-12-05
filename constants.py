@@ -179,3 +179,160 @@ guidelines = {
         ],
     },
 }
+
+
+DEFAULT_QUICKSIGHT_DATA = """
+| Metric                       | Oct 2025 | Nov 2025 |
+|-----------------------------|----------|----------|
+| Facebook Posts              | 4        | 4        |
+| Facebook Impressions        | 11       | 24       |
+| Facebook Likes              | 0        | 1        |
+| Facebook Site Clicks        | 0        | 0        |
+| Facebook Direction Clicks   | 0        | 0        |
+| Facebook Phone Clicks       | 0        | 0        |
+| Instagram Posts             | 2        | 4        |
+| Instagram Impressions       | 48       | 160      |
+| Instagram Site Clicks       | 0        | 0        |
+| Instagram Direction Clicks  | 0        | 0        |
+| Instagram Phone Clicks      | 0        | 0        |
+| Instagram Followers         | 0        | 0        |
+| Facebook Ads                | –        | 1        |
+| Facebook Ads Clicks         | –        | 59       |
+| Facebook Ads CTR           | –        | 1.25     |
+| Facebook Ads CPC           | –        | 0.33     |
+| Google Search Impressions   | 151      | 404      |
+| Google Map Impressions      | 11       | 25       |
+| Google Site Clicks          | 10       | 24       |
+| Google Call Clicks          | 5        | 4        |
+| Google Ads                  | 1        | –        |
+| Google Ads Clicks           | 165      | –        |
+| Google Ads CPM              | 4.62     | –        |
+| Google Ads CPC              | 0.2      | –        |
+
+"""
+
+DEFAULT_ZYLOV6_DATA = """
+Delivery Details 
+
+| Post Type                  | Date       |
+|---------------------------|------------|
+| Ongoing                  | 2025-11-28 |
+| On-Demand Social Posts   | 2025-11-27 |
+| On-Demand Social Posts   | 2025-11-26 |
+| On-Demand Social Posts   | 2025-11-24 |
+| On-Demand Social Posts   | 2025-11-21 |
+| On-Demand Social Posts   | 2025-11-20 |
+| On-Demand Social Posts   | 2025-11-12 |
+| Ongoing Posts            | 2025-11-12 |
+| On-Demand Social Posts   | 2025-11-11 |
+| Ongoing Posts            | 2025-11-10 |
+| Ongoing Posts            | 2025-11-10 |
+| Ongoing Posts            | 2025-11-10 |
+| Ongoing Posts            | 2025-11-10 |
+| On-Demand Social Posts   | 2025-11-10 |
+| Ongoing Posts            | 2025-11-10 |
+| Ongoing Posts            | 2025-11-09 |
+| Ongoing Posts            | 2025-11-09 |
+| Ongoing Posts            | 2025-11-09 |
+| On-Demand Social Posts   | 2025-11-06 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-05 |
+| Ongoing                  | 2025-11-05 |
+| Ongoing                  | 2025-11-05 |
+| On-Demand Social Posts   | 2025-11-04 |
+| On-Demand Social Posts   | 2025-11-04 |
+| On-Demand Social Posts   | 2025-11-03 |
+| On-Demand Social Posts   | 2025-11-03 |
+| Ongoing Posts            | 2025-10-28 |
+| On-Demand Social Posts   | 2025-10-23 |
+| On-Demand Social Posts   | 2025-10-23 |
+| Ongoing Social Posts     | 2025-10-23 |
+| Ongoing Social Posts     | 2025-10-23 |
+| Ongoing Social Posts     | 2025-10-23 |
+| Ongoing Social Posts     | 2025-10-23 |
+| Ongoing Social Posts     | 2025-10-09 |
+| On-Demand Social Posts   | 2025-10-09 |
+| On-Demand Social Posts   | 2025-10-09 |
+| On-Demand Social Posts   | 2025-10-09 |
+| On-Demand Social Posts   | 2025-10-09 |
+| Ongoing Social Posts     | 2025-10-08 |
+| Ongoing Social Posts     | 2025-10-08 |
+| Ongoing Social Posts     | 2025-10-06 |
+| On-Demand Social Posts   | 2025-09-29 |
+| On-Demand Social Posts   | 2025-09-29 |
+| On-Demand Social Posts   | 2025-09-29 |
+| On-Demand Social Posts   | 2025-09-29 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| On-Demand Social Posts   | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| Ongoing Posts            | 2025-09-19 |
+| On-Demand Social Posts   | 2025-09-16 |
+| Ongoing Posts            | 2025-09-15 |
+| On-Demand Social Posts   | 2025-09-05 |
+| On-Demand Social Posts   | 2025-09-05 |
+| On-Demand Social Posts   | 2025-09-05 |
+| Facebook Ads            | 2025-11-20 |
+| Facebook Ads            | 2025-08-29 |
+| Facebook Ads            | 2025-08-28 |
+
+
+"""
+
+DEFAULT_ZYLOV6_CONTENT = """
+November 20 at 6:30 PM - "Comfort and dignity return to daily life when care is shaped around personal needs. Our in-home nursing and caregiver support brings trust and gentle guidance to your f..." (with image of text)
+
+
+November 17 at 2:30 PM - "Flexible home care is possible with our transparent pricing starting at $27 per hour. We help families plan confidently, regardless of insurance. Let's talk about how w..." (with hospital image)
+
+
+November 10 at 3:30 PM - "Baltimore families receive care shaped by local knowledge and deep community roots. Our team understands your needs and traditions, offering support that feels truly fa..." (with image of healthcare team)
+
+
+November 4 at 5:30 PM - "Personal care journals keep routines and preferences clear for everyone involved. We use these tools to support independence and comfort. Ask us how care journals can h..." (with diary/studying image)
+
+
+November 2 - "West Pointe Healthcare, LLC is at Baltimore City." - "Druid Heights Community Health Fair. 10.25.2025" (with multiple photos from the health fair event)
+
+
+November 1 - "West Pointe Healthcare, LLC updated their cover photo" (profile update post)
+
+
+November 1 - "West Pointe Healthcare, LLC updated their profile picture." (profile update post with "WEST POINTE HEALTHCARE" text graphic)
+
+
+October 28 - "Call today for a bed or a private room! At Pointe to Wellness, Inc., we believe everyone deserves a safe and supportive place to rebuild. Whether you're experiencing ha..." (transitional housing post)
+
+
+October 24 - "Join Us Tomorrow" - Druid Heights Community Health Fair announcement with event details (Saturday, October 25th, Unity Hall 1505 Eutaw Place, 1pm-3pm, with information about free health screenings)
+
+
+September 14 - "Now Hiring Part Time Psych NP: Telemedicine" (recruitment post)
+"""
+
+DEFAULT_IGNITE_PAYLOAD = """
+
+Business Name -
+ West Pointe Healthcare, LLC
+Business URL -
+ https://www.westpointehealthcarestaffing.com
+
+Instagram -
+ https://instagram.com/westpointehealthcarewestpointehealthcarestaffing​
+Facebook -
+ https://m.facebook.com/West-Pointe-Healthcare-LLC-113112768279549/westpointehealthcarestaffing​
+About business
+West Pointe Healthcare is an independent healthcare company that provides staffing and home care services to both public and private sector clients, including clinics, care homes, hospitals, assisted living facilities, and individuals needing in‑home care. The company focuses on simplifying healthcare staffing and delivering premier home care through its Healthcare Staffing and Residential Services Agency offerings from its office in Owings Mills, Maryland.
+
+"""

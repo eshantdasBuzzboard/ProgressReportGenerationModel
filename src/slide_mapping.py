@@ -16,21 +16,19 @@ from core.chains.general_cohort_chain.slides import (
 def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]]:
     """
     Returns a list of slide function configurations based on cohort and category.
-
-    Each function config is a dict with:
-    - 'name': function name
-    - 'func': the async function to call
-    - 'requires': list of required data parameters
-
-    Args:
-        cohort: Cohort identifier ('1', '2', '5', '6a', '6b', '7a', '7b', '8')
-        exact_category: Category ('uptrend' or 'downtrend')
-
-    Returns:
-        List of function configurations to run
     """
 
-    # Cohort 8 has special logic - no category check needed
+    # Define the config for the delivery slide
+    # The 'requires' keys MUST match the arguments in 'here_is_what_we_delivered_chain'
+    delivery_slide_config = {
+        "name": "here_is_what_we_delivered",
+        "func": here_is_what_we_delivered_chain,
+        "requires": ["zylo_v6_data_json", "zylo_v6_post_content"],
+    }
+
+    # ---------------------------------------------------------
+    # COHORT 8
+    # ---------------------------------------------------------
     if cohort == "8":
         return [
             {
@@ -38,11 +36,7 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
                 "func": slide1_introduction_chain,
                 "requires": ["ignite_payload", "quicksight_data"],
             },
-            {
-                "name": "your_brand_in_action",
-                "func": here_is_what_we_delivered_chain,
-                "requires": ["zylo_v6_data"],
-            },
+            delivery_slide_config,
             {
                 "name": "action_plan_next_month",
                 "func": action_plan_next_month_chain,
@@ -50,7 +44,10 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
             },
         ]
 
-    # Initialize with intro slide (common to all)
+    # ---------------------------------------------------------
+    # STANDARD LOGIC (Cohorts 1, 2, 5, 6, 7)
+    # ---------------------------------------------------------
+
     slides = [
         {
             "name": "intro_slide",
@@ -59,8 +56,12 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
         }
     ]
 
-    # Uptrend logic
+    # -------------------- UPTREND --------------------
     if exact_category == "uptrend":
+        # Insert Delivery Slide for Cohort 1 & 2
+        if cohort in ["1", "2"]:
+            slides.append(delivery_slide_config)
+
         slides.extend([
             {
                 "name": "big_wins_this_month",
@@ -74,7 +75,6 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
             },
         ])
 
-        # Add "how your ads performed" for cohorts 1, 5, 6a, 7a
         if cohort in ["1", "5", "6a", "7a"]:
             slides.append({
                 "name": "how_your_ads_performed",
@@ -82,7 +82,6 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
                 "requires": ["quicksight_data"],
             })
 
-        # Add "what drove results" for cohorts 1, 2, 5, 6a, 6b, 7a, 7b (uptrend only)
         if cohort in ["1", "2", "5", "6a", "6b", "7a", "7b"]:
             slides.append({
                 "name": "what_drove_results",
@@ -90,15 +89,18 @@ def get_slide_functions(cohort: str, exact_category: str) -> List[Dict[str, Any]
                 "requires": ["quicksight_data", "ignite_payload"],
             })
 
-        # Action plan is common to all uptrend
         slides.append({
             "name": "action_plan_next_month",
             "func": action_plan_next_month_chain,
             "requires": ["quicksight_data"],
         })
 
-    # Downtrend logic
+    # -------------------- DOWNTREND --------------------
     elif exact_category == "downtrend":
+        # Insert Delivery Slide for Cohort 1 & 2
+        if cohort in ["1", "2"]:
+            slides.append(delivery_slide_config)
+
         slides.extend([
             {
                 "name": "performance_summary",
@@ -132,52 +134,48 @@ async def run_slide_generation(
     quicksight_data: str,
     zylo_v6_data: str,
     social_stats="",
+    zylo_v6_data_json=None,  # This comes from the main input
+    zylo_v6_post_content=None,  # This comes from the main input
     msp_data="",
 ) -> Dict[str, Any]:
     """
     Run all slide generation functions based on cohort and category.
-
-    Args:
-        cohort: Cohort identifier
-        exact_category: Category ('uptrend' or 'downtrend')
-        ignite_payload: Ignite payload data
-        quicksight_data: QuickSight data
-        zylo_v6_data: Zylov6 data
-
-    Returns:
-        Dictionary with slide names as keys and their generated data as values
     """
 
-    # Get the functions to run
     slide_configs = get_slide_functions(cohort, exact_category)
 
-    # Prepare data mapping
+    # MAP DATA: Ensure keys here match the 'requires' list in config
     data_map = {
         "ignite_payload": ignite_payload,
         "quicksight_data": social_stats,
         "zylo_v6_data": zylo_v6_data,
+        # Explicit mapping for the delivery slide
+        "zylo_v6_data_json": zylo_v6_data_json,
+        "zylo_v6_post_content": zylo_v6_post_content,
     }
 
-    # Create tasks for async execution
     tasks = []
     slide_names = []
 
     for config in slide_configs:
-        # Build kwargs based on what the function requires
-        kwargs = {param: data_map[param] for param in config["requires"]}
+        kwargs = {}
+        for param in config["requires"]:
+            if param in data_map:
+                kwargs[param] = data_map[param]
+            else:
+                kwargs[param] = None
 
-        # Create task
         task = config["func"](**kwargs)
         tasks.append(task)
         slide_names.append(config["name"])
 
-    # Run all tasks concurrently
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Map results to slide names
     output = {}
     for name, result in zip(slide_names, results):
         if isinstance(result, Exception):
+            # Print error for debugging
+            print(f"Error generating slide {name}: {str(result)}")
             output[name] = {"error": str(result)}
         else:
             output[name] = result

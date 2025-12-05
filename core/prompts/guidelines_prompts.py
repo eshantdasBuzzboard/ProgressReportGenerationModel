@@ -164,7 +164,7 @@ The updated_dict must be STRICTLY free from ALL guideline violations
 Return valid JSON array only
 Make sure you find issues in multiple slides then return list of multiple slides problem, if only one slide then that only and if there is no violation then return empty list [].
 Return back the whole slide content while returning back only specific to that slide after updating the violation of guidelines section with proper content.
-
+- Finally very importantly make sure you dont increase the character or word length of the content. Try to keep it exactly same or maybe just a little less. Strictly dont increase the character count of the content if you need to regeerate.
 Return your findings as a JSON array:
 """
 report_validation_prompt = ChatPromptTemplate.from_messages([

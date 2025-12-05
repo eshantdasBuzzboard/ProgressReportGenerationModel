@@ -13,6 +13,9 @@ from core.pydantic_class.preprocess_structure import (
     CategoryIdentification,
     AdsScore,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -20,17 +23,23 @@ load_dotenv()
 llm = ChatOpenAI(model="gpt-4.1", temperature=0, use_responses_api=True, max_retries=3)
 
 
-async def preprocess_chain(ignite_api_data, quick_sight_data, zylo_v6_data, msp_data):
+async def preprocess_chain(
+    ignite_api_data, quick_sight_data, zylo_v6_data, msp_data, zylo_v6_post_content
+):
     llmr = llm.with_structured_output(BusinessSnapshot)
     achain = data_structuring_prompt | llmr
+    logger.info(f"Zylo post content \n {zylo_v6_post_content}")
     input_data = {
         "quicksight_data": quick_sight_data,
         "ignite_api_data": ignite_api_data,
         "zylo_v6_data": zylo_v6_data,
         "msp_data": msp_data,
+        "zylo_v6_post_content": zylo_v6_post_content,
     }
     response = await achain.ainvoke(input_data)
-    return json.loads(response.model_dump_json())
+    response = json.loads(response.model_dump_json())
+    logger.info(f"Response from Chain \n {response}")
+    return response
 
 
 async def category_chain(social_stats):

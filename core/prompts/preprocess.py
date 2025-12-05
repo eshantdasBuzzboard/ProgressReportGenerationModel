@@ -1,5 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
+
 data_structuring_system_prompt = """
 You are a data transformation specialist. Your job is to extract and structure business 
 performance data from multiple sources into a standardized format.
@@ -9,6 +10,9 @@ You will receive data from four different sources:
 2. Zylo V6 data - containing social media and advertising performance
 3. MSP data - containing additional marketing and performance metrics
 4. Ignite API data - containing delivery and resolution information
+
+Additionally, you may receive:
+5. Zylo V6 Post Content - containing recent social media post content from the business
 
 Your task is to carefully extract relevant information from these sources and structure 
 them according to the exact schema requirements. Follow these principles:
@@ -45,6 +49,12 @@ them according to the exact schema requirements. Follow these principles:
 - Capture ISO 8601 formatted timestamps for resolved field
 - Maintain chronological order if present in source
 
+**Post Content Handling:**
+- If zylo_v6_post_content is provided, extract the content from each post
+- Remove any dates from the content entries
+- Structure as a list of content strings (e.g., "Content 1: ...", "Content 2: ...")
+- If zylo_v6_post_content is not provided or empty, return null for this field
+
 Return a valid JSON object matching the BusinessSnapshot schema structure.
 """
 
@@ -70,6 +80,12 @@ Please structure the following data sources into the BusinessSnapshot format:
 <ignite_api_data>
 {ignite_api_data}
 </ignite_api_data>
+
+**Zylo V6 Post Content:**
+<zylo_v6_post_content>
+{zylo_v6_post_content}
+</zylo_v6_post_content>
+Generate  recent_post_content from here above zylo_v6_post_content if it exists
 
 ## REQUIRED OUTPUT FIELDS AND DEFINITIONS:
 
@@ -124,6 +140,13 @@ Each metric below should be structured as a `TimeSeriesStats` object containing 
   - `social_post_type`: Type or category of the social media post delivered
   - `resolved`: ISO 8601 timestamp when the post was completed/delivered (e.g., "2025-10-20T14:30:00Z")
 
+**Recent Post Content:**
+- `recent_post_content`: A list of recent social media post content strings
+  - If zylo_v6_post_content data is detected/provided, extract and return a list of content entries
+  - Remove any dates from the content (e.g., "November 20 at 6:30 PM - " should be removed)
+  - Format each entry as: "Content 1: [post text]", "Content 2: [post text]", etc.
+  - If zylo_v6_post_content is not provided, empty, or contains no valid content, return null
+
 ## EXTRACTION GUIDELINES:
 
 **From QuickSight Data:**
@@ -145,6 +168,11 @@ Each metric below should be structured as a `TimeSeriesStats` object containing 
 - Delivery items with post types
 - Resolution timestamps
 - On-demand and ongoing request counts
+
+**From Zylo V6 Post Content:**
+- Recent social media post text/captions
+- Strip dates and timestamps from content
+- Preserve the actual post content/message
 
 ## TIME PERIOD STRUCTURE EXAMPLE:
 
@@ -169,6 +197,22 @@ For weekly data:
   }}
 }}
 
+## RECENT POST CONTENT STRUCTURE EXAMPLE:
+
+If zylo_v6_post_content contains posts:
+{{
+  "recent_post_content": [
+    "Content 1: Comfort and dignity return to daily life when care is shaped around personal needs. Our in-home nursing and caregiver support brings trust and gentle guidance to your f...",
+    "Content 2: Flexible home care is possible with our transparent pricing starting at $27 per hour. We help families plan confidently, regardless of insurance. Let's talk about how w...",
+    "Content 3: Baltimore families receive care shaped by local knowledge and deep community roots. Our team understands your needs and traditions, offering support that feels truly fa..."
+  ]
+}}
+
+If zylo_v6_post_content is not provided or empty:
+{{
+  "recent_post_content": null
+}}
+
 ## VALIDATION CHECKLIST:
 
 ✓ All required fields are present (even if null)
@@ -180,6 +224,7 @@ For weekly data:
 ✓ Numeric metrics preserved as strings with original formatting
 ✓ No data fabrication - use null for missing values
 ✓ JSON structure matches BusinessSnapshot schema exactly
+✓ recent_post_content is a list of strings with dates removed, or null if not available
 
 Extract and structure the data now, returning only the complete JSON object.
 """
@@ -188,6 +233,7 @@ data_structuring_prompt = ChatPromptTemplate.from_messages([
     ("system", data_structuring_system_prompt),
     ("human", data_structuring_user_prompt),
 ])
+
 
 trend_analysis_system_prompt = """
 You are a data trend analyzer specializing in social media and digital marketing metrics. 

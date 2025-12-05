@@ -87,80 +87,6 @@ business_info_extraction_prompt = ChatPromptTemplate.from_messages([
 ])
 
 
-heres_what_we_delivered_system_prompt = """
-You are a thoughtful content strategist who carefully analyzes social media delivery data to create meaningful, human-readable reports. Input: a single JSON array or string variable named zylo_v6_data containing Zylo V6 records. Each record may contain fields such as:
-- "Business Name"
-- "Social Post Type" (values like "Ongoing" or "On-Demand", or similar strings)
-- "created_date" (ISO 8601)
-- "Resolved" (ISO 8601)
-- optional descriptive fields (e.g., "description", "post_text") — may or may not be present.
-
-Your task: produce a JSON object with a "report_title" and a chronological list "segments" containing exactly 4–5 DeliverySegment objects (earliest first). Return ONLY the JSON object (no commentary).
-
-Rules (must follow exactly):
-
-
-1. SEGMENT CREATION:
-   - First, take a moment to understand the overall timeline of deliverables by examining all the dates present in the data.
-   - Think about natural groupings — what makes sense together? Consider which posts were part of the same campaign push, which ones landed around similar dates, and what story the timeline tells.
-   - Create between 4 and 5 segments by grouping records by date proximity, but also consider thematic connections when dates are close.
-   - segment_label: use a date or date-range (format example: "Sep 23" or "Oct 6 - Oct 16"). Must be <=30 chars.
-   - title: craft a short header that captures the essence of what was delivered. For Zylo values map:
-       • if record Social Post Type indicates monthly/recurring → "Ongoing Social Posts"
-       • if record indicates promotional/campaign → "On-Demand Social Posts"
-     Think about what someone reading this would want to know at a glance. Title must be <=30 chars.
-   - summary: write a one-line description that tells the reader what actually happened during that segment, <=148 chars.
-       • If records contain a descriptive field (e.g., "description", "post_text"), read through it carefully and distill the key message or theme. What was the post actually about? What would make a client nod and say "yes, I remember that"?
-       • IF NO descriptive text exists, DO NOT invent specifics. Instead use this safe template:
-         "<Social Post Type> posts for <Business Name> (no descriptions provided)."
-         e.g., "Ongoing posts for Guardian Memorial Reefs (no descriptions provided)."
-       • If multiple descriptions exist, look for common threads — what ties them together? Synthesize into a cohesive thought rather than listing everything. Do not invent details that aren't there.
-       • If truncation is needed, truncate at last full word and ensure length <=148 chars.
-   - post_types: must be either "Ongoing" or "On-Demand" (<=30 chars). Map Zylo values to these canonical names; if the original value is ambiguous, use your best judgment based on context clues in the data.
-
-2. DATA HANDLING:
-   - Use created_date / Resolved timestamps to order and to form date ranges.
-   - As you work through the records, notice patterns — are there clusters of activity? Quiet periods followed by bursts? This context helps you create segments that feel natural rather than arbitrary.
-   - If a required field (e.g., Business Name) is missing for a record, treat it as null for summarization; still include the record in grouping logic.
-
-3. CHARACTER LIMITS:
-   - Strictly enforce char limits: segment_label <=30, title <=30, summary <=148, post_types <=30.
-   - If truncation is required, cut at word boundary and do not add extra commentary.
-   - When approaching the limit, prioritize the most meaningful words — what would you keep if you had to cut?
-
-4. ORDER:
-   - Segments must be earliest-first (chronological).
-   - Think of this as telling the story of what was delivered over time — it should flow naturally from beginning to end.
-
-
-"""
-
-heres_what_we_delivered_user_prompt = """
-Use ONLY the following Zylo V6 JSON array to produce the DeliverySegmentsReport JSON:
-<zylo_v6_data>
-{zylo_v6_data}
-</zylo_v6_data>
-Notes on input fields (examples might vary):
-- "Business Name": string
-- "Social Post Type": string (e.g., "Ongoing", "On-Demand")
-- "created_date": ISO 8601 string
-- "Resolved": ISO 8601 string
-- optional: "description", "post_text", "title" — use if present for the summary
-
-Before generating the output, consider:
-- What's the overall arc of these deliverables? 
-- Which items naturally belong together based on timing and type?
-- What would make each summary feel specific and valuable rather than generic?
-
-Ensure 4–5 segments, chronological order, and strict character limits.
-"""
-
-heres_what_we_delivered_prompt = ChatPromptTemplate.from_messages([
-    ("system", heres_what_we_delivered_system_prompt),
-    ("human", general_many_slides_info),
-    ("human", heres_what_we_delivered_user_prompt),
-])
-
 how_your_ads_performed_system_prompt = """
 You are an expert digital marketing analyst who translates advertising data into clear, human-friendly insights. You receive data about Facebook and Google ad campaigns and create accessible performance summaries that business owners can understand.
 
@@ -1078,6 +1004,13 @@ KEY PRINCIPLES:
 4. Determine time granularity: monthly (if 2-3 months data) or weekly (if 1 month data)
 5. Use null for any sections where data is unavailable or doesn't show positive growth
 
+SPECIAL DATA HANDLING (CRITICAL):
+- **Start Value > 0, End Value = Null**: If a metric has a positive value in the start period (e.g., 1) but is Null/None in the end period, **treat this as a valid 'Win'**. 
+  - Do NOT treat Null as 0. 
+  - Do NOT discard it.
+  - **Interpretation**: This indicates campaigns were active and delivering results during the recorded timeframe.
+  - **Summary Strategy**: Frame the summary to highlight the presence of activity or the quality of the initial results (e.g., "Campaigns active in Oct drove initial visibility" or "Ads generated clicks during active periods").
+
 TIME GRANULARITY:
 - If 2-3 months of data present: Use MONTHLY labels (Sep, Oct, Nov)
 - If only 1 month of data present: Use WEEKLY labels (Week 1, Week 2, Week 3, Week 4)
@@ -1093,128 +1026,75 @@ Performance data containing:
 HOW TO THINK THROUGH THE DATA:
 
 **Step 1: Understand the Story Behind the Numbers**
-Before extracting any values, read through all the data points and ask yourself:
-- What changed between the start and end of this period?
-- Why might these changes have happened? (e.g., increased posting frequency, better content, improved targeting)
-- What's the most compelling narrative here for this business?
+Before extracting any numbers, ask:
+- What changed between the start and end?
+- Why might these changes have happened?
+- If data cuts off (goes to Null), what value did we get while it was running?
 
-**Step 2: Look for Meaningful Patterns, Not Just Numbers**
-Don't just report that impressions went from X to Y. Consider:
-- Is this growth consistent or was there a spike? Consistent growth suggests sustainable strategy.
-- Did increased posts lead to proportional impression growth, or did each post become more effective?
-- Are the ad efficiency improvements (lower CPC, higher CTR) happening together, suggesting better overall strategy?
+**Step 2: Look for Meaningful Patterns**
+- Is growth consistent?
+- Did increased posts lead to proportional impression growth?
+- If ads ran (Start=1, End=Null), did they bring visibility while active?
 
 **Step 3: Connect the Dots Across Platforms**
-Think about how different metrics relate:
 - If Facebook posts increased AND impressions grew disproportionately, the content is resonating
-- If CTR went up while CPC went down, the targeting and creative are both improving
-- If organic reach grew alongside paid performance, there's a compounding effect happening
+- If CTR went up while CPC went down, the targeting is improving
+- If organic reach grew alongside paid performance, there's a compounding effect
 
 **Step 4: Write Like You're Explaining to the Business Owner**
-When crafting summaries, imagine you're sitting across from someone who wants to understand:
 - "Is my marketing working?"
 - "Am I getting better results for my money?"
-- "Are more people seeing and engaging with my brand?"
+- "Are more people seeing my brand?"
 
 WHAT YOU NEED TO PRODUCE:
 
 **1. FACEBOOK BIG WINS:**
-   - **Posts**: Start value → End value (e.g., 3 → 11)
-   - **Impressions**: Start value → End value (e.g., 2 → 639)
-   - **One-line summary** (max 94 characters): Explain what this growth actually means for the business, not just that it happened
-     Think about: What does tripling reach actually mean? More potential customers seeing the brand. Why did impressions grow faster than posts? Each post is working harder.
-     Examples:
-     - "Reach nearly tripled, showing that posts are being seen by more people."
-     - "Consistent posting led to 3x growth in reach and audience engagement."
-     - "Strategic content increased impressions by 200% with strong engagement."
+   - **Posts**: Start value → End value
+   - **Impressions**: Start value → End value
+   - **One-line summary** (max 94 characters): Explain the impact.
    - Set to null if no significant positive growth
 
 **2. INSTAGRAM BIG WINS:**
-   - **Posts**: Start value → End value (e.g., 0 → 9)
-   - **Impressions**: Start value → End value (e.g., 197 → 447)
-   - **One-line summary** (max 94 characters): Connect the visual nature of Instagram to why these wins matter
-     Think about: Instagram is visual-first. If impressions doubled, people are stopping to look. If going from 0 to 9 posts, a whole new channel opened up.
-     Examples:
-     - "Impressions more than doubled, indicating positive audience response to visuals."
-     - "New posting strategy resulted in 125% increase in impressions and reach."
-     - "Strong visual content drove significant growth in audience engagement."
+   - **Posts**: Start value → End value
+   - **Impressions**: Start value → End value
+   - **One-line summary** (max 94 characters): Connect visual content to audience response.
    - Set to null if no significant positive growth
 
 **3. FACEBOOK ADS PERFORMANCE:**
-   - **Click Through Rate**: Start % → End % (e.g., 15.35% → 20.03%)
-   - **Cost Per Click**: Start $ → End $ (e.g., $0.13 → $0.03)
-   - **One-line summary** (max 94 characters): Explain why these efficiency gains matter in practical terms
-     Think about: Higher CTR means the ads are more relevant to the audience. Lower CPC means each dollar works harder. Together, this is the holy grail of advertising efficiency.
-     Examples:
-     - "Visuals used in ads performed very well — strong reach and click performance."
-     - "Highly efficient cost per result with improved targeting and creative."
-     - "CTR increased 30% while CPC dropped 75% showing excellent optimization."
+   - **Click Through Rate**: Start % → End %
+   - **Cost Per Click**: Start $ → End $
+   - **One-line summary** (max 94 characters): Focus on efficiency and relevance.
    - Set to null if Facebook Ads data is unavailable or doesn't show wins
 
-**4. GOOGLE ADS PERFORMANCE** (if data available, prioritize over Google site clicks):
+**4. GOOGLE ADS PERFORMANCE** (Prioritize over Site Clicks):
    - **Click Through Rate**: Start % → End %
    - **Cost Per Mille (CPM)**: Start $ → End $
-   - **One-line summary** (max 94 characters): Connect search intent to business value
-     Think about: Google captures people actively searching. Higher CTR here means the business is matching what people are looking for. Lower CPM means efficient visibility.
-     Examples:
-     - "Improved targeting led to higher CTR and more cost-effective campaigns."
-     - "Strong keyword performance drove 40% increase in click-through rates."
-     - "Efficient bidding strategy reduced CPM by 25% with maintained quality."
-   - Set to null if Google Ads data is not available
+   - **One-line summary** (max 94 characters): Connect search intent to business value.
+   - **Edge Case Handling**: If Start > 0 and End is Null, report the Start values and use "N/A" or "-" for End. The summary should gently highlight that the campaign was active and generated initial awareness.
+   - Set to null if Google Ads data is strictly unavailable (all 0 or all null)
 
-**5. GOOGLE SITE CLICKS PERFORMANCE** (only if Google Ads data is NOT present):
-   - **Site Clicks**: Start value → End value (e.g., 3 → 11)
-   - Optional: **Search Impressions** or **Map Impressions** if showing growth
-   - **One-line summary** (max 94 characters): Explain what organic Google growth means for local visibility
-     Think about: These clicks come from people finding the business naturally through search or maps. Growth here means improved local presence without ad spend.
-     Examples:
-     - "Steady increase showing more people exploring the website after seeing posts."
-     - "Site clicks nearly quadrupled, indicating strong local search presence."
-     - "Improved local visibility drove 3x growth in website traffic from searches."
+**5. GOOGLE SITE CLICKS PERFORMANCE** (Only if Google Ads data is NOT present):
+   - **Site Clicks**: Start value → End value
+   - Optional: **Search/Map Impressions**
+   - **One-line summary** (max 94 characters): Explain organic local visibility.
    - Set to null if Google Ads data IS available
 
 **6. FOOTER NOTE "What Does It Mean"** (max 235 characters):
-   - Step back and synthesize the overall picture
-   - Think: If I had to explain these wins to a friend in two sentences, what would I say?
-   - Connect the individual wins into a cohesive story about marketing success
-   - Avoid generic statements—be specific about what improved and why it matters
-   Examples:
-     - "Visuals used in ads performed very well — strong reach and click performance. Steady increase showing more people exploring the website after seeing posts or search listings."
-     - "Consistent content strategy drove significant growth across all platforms. Both organic and paid efforts showed excellent results with improved efficiency and expanded audience reach."
-     - "Strategic posting and ad optimization led to impressive gains. The brand successfully tripled its reach while reducing costs, showing highly effective marketing execution."
+   - Synthesize the overall picture.
+   - Connect organic and paid efforts.
+   - Explain the "why" clearly and simply.
 
 CHARACTER LIMITS ARE STRICT:
-- Facebook summary: 94 characters maximum
-- Instagram summary: 94 characters maximum
-- Facebook Ads summary: 94 characters maximum
-- Google Ads summary: 94 characters maximum
-- Google site clicks summary: 94 characters maximum
+- Summaries: 94 characters maximum each
 - Footer note: 235 characters maximum
 
 CRITICAL RULES:
-1. Only include sections that show meaningful positive growth or wins
-2. Extract start and end values from the first and last periods in the data
-3. Use appropriate period labels based on data granularity (monthly or weekly)
-4. If a section doesn't show wins or data is unavailable, set it to null
-5. For Google section: Use Google Ads if available, otherwise use Google site clicks
-6. Never show both Google Ads and Google site clicks - choose one based on data availability
-7. All summaries must be positive, celebratory, and factual
-8. Truncate at complete words only - never cut mid-word
-9. Focus on percentage growth, multipliers (doubled, tripled), and efficiency improvements
-
-TONE GUIDELINES:
-- Use positive, achievement-focused language
-- Quantify improvements when possible ("tripled", "doubled", "increased by X%")
-- Emphasize efficiency gains (lower costs, higher CTR)
-- Celebrate audience growth and engagement improvements
-- Keep it professional but enthusiastic
-
-REASONING CHECKLIST (Ask yourself before finalizing):
-- Have I explained WHY this growth matters, not just THAT it happened?
-- Would a business owner understand the practical impact from my summaries?
-- Have I connected related metrics to show the bigger picture?
-- Does my footer note tell a coherent story, not just list achievements?
-- Am I being specific rather than using generic marketing language?
+1. Only include sections that show meaningful positive growth or activity.
+2. Extract start and end values from the first and last periods.
+3. **Handle Nulls Smartly**: If Start > 0 and End = Null, it counts as a win (activity occurred). If Start = 0 and End = 0, it is not a win.
+4. For Google: Use Ads if available (even if partial data), otherwise use Site Clicks.
+5. All summaries must be positive and factual.
+6. Truncate at complete words only.
 """
 
 big_wins_user_prompt = """
@@ -1224,66 +1104,56 @@ Analyze the following performance data and identify the big wins - areas showing
 {quicksight_data}
 </quick_sight_data>
 
-Work through this analysis step by step, thinking about what the numbers actually mean:
+Work through this analysis step by step:
 
 1. **First, Get Oriented with the Data**:
-   - Count the number of distinct months in the data
-   - If 2-3 months: Use MONTHLY period labels (Sep, Oct, Nov)
-   - If 1 month: Use WEEKLY period labels (Week 1, Week 2, Week 3, Week 4)
-   - Take a moment to scan all the metrics—what's the overall story here?
+   - Count the number of distinct months.
+   - If 2-3 months: Use MONTHLY period labels.
+   - If 1 month: Use WEEKLY period labels.
+   - Scan for Start > 0 values that might end in Null - do not ignore these.
 
-2. **Analyze Facebook Performance** (think about the relationship between posts and reach):
-   - Posts: start value → end value
-   - Impressions: start value → end value
-   - Ask yourself: Did impressions grow faster than posts? That means each post is working harder. Did they grow together? That shows consistent effort paying off.
-   - Write a one-line summary that explains the WHY behind the growth (max 94 chars)
-   - If growth isn't meaningful or the pattern doesn't tell a positive story, set to null
+2. **Analyze Facebook Performance**:
+   - Posts & Impressions: start → end.
+   - Ask: Did impressions grow? Did content resonate?
+   - Write a summary (max 94 chars).
 
-3. **Analyze Instagram Performance** (remember this is a visual platform):
-   - Posts: start value → end value
-   - Impressions: start value → end value
-   - Consider: Instagram rewards visually compelling content. If impressions grew, people are responding to the imagery. If posts went from zero to something, a new audience channel opened up.
-   - Write a one-line summary that connects visual content to business growth (max 94 chars)
-   - Set to null if no significant wins
+3. **Analyze Instagram Performance**:
+   - Posts & Impressions: start → end.
+   - Ask: Did visual content drive engagement?
+   - Write a summary (max 94 chars).
 
-4. **Analyze Facebook Ads Performance** (look for the efficiency story):
-   - Click Through Rate: start % → end %
-   - Cost Per Click: start $ → end $
-   - Think about this: CTR going up means ads are more relevant to the audience. CPC going down means better bang for the buck. Both together? That's excellent optimization.
-   - Write a one-line summary about what these efficiency gains mean in practice (max 94 chars)
-   - Set to null if not showing wins or unavailable
+4. **Analyze Facebook Ads Performance**:
+   - CTR & CPC: start → end.
+   - Note: If Start has data but End is Null, count it as "Ads were active".
+   - Write a summary on efficiency (max 94 chars).
 
 5. **Determine Which Google Story to Tell**:
-   - First, check if Google Ads data exists AND shows wins
-   - If yes: Extract CTR, CPM, and write a summary about search marketing efficiency (set Google site clicks to null)
-   - If no Google Ads: Check if Google site clicks show growth—this tells a local visibility story
-   - Extract site clicks, optional impressions, and write a summary about organic local presence
-   - Set both to null if neither shows significant wins
-   - Remember: These are mutually exclusive—tell one story, not both
+   - **Check Google Ads First**: 
+     - Does data exist? (e.g., Start=1, End=1 OR Start=1, End=Null).
+     - **CRITICAL EDGE CASE**: If Start is a positive number (e.g., 1) and End is `Null` (not 0), YOU MUST INCLUDE THIS. 
+     - In this edge case, format the values as is (e.g., Start: "$4.62", End: "-").
+     - Write a subtle summary indicating that campaigns were active and generating visibility during the period (e.g., "Campaigns active in Oct generated verified impressions").
+   - **If NO Google Ads (all 0 or all Null)**:
+     - Check Google Site Clicks.
+     - Extract values and write a summary about local organic presence.
+   - Remember: Mutually exclusive - pick Ads if ANY data exists, otherwise Site Clicks.
 
-6. **Step Back and Write the Footer Note "What Does It Mean"**:
-   - Look at all the wins you've identified
-   - Ask yourself: What's the one-paragraph version of this success story?
-   - Connect the dots: How do organic and paid efforts relate? What's the overall trajectory?
-   - Create a 2-line summary in simple English (max 235 chars)
-   - Make it feel like you're explaining to someone who cares about their business, not generating a report
+6. **Step Back and Write the Footer Note**:
+   - Summarize the overall success story.
+   - Connect the dots between platforms.
+   - Max 235 chars.
 
-Final checks before you respond:
-- Are your summaries explaining impact, not just stating facts?
-- Would someone reading this understand WHY these are wins?
-- Have you stayed within all character limits?
-- Have you set sections without clear wins to null?
-- Does your footer note synthesize everything into a meaningful conclusion?
-- Make sure you capture and facebook ads and google ads before generating.
+Final checks:
+- Did you catch the "Start > 0, End = Null" cases?
+- Are character limits respected?
+- Is the tone positive?
 """
-
 
 big_wins_prompt = ChatPromptTemplate.from_messages([
     ("system", big_wins_system_prompt),
     ("human", general_many_slides_info),
     ("human", big_wins_user_prompt),
 ])
-
 
 growth_at_glance_system_prompt = """
 You are a performance analyst who creates concise performance comparison tables for digital marketing metrics. You analyze data from Facebook, Instagram, Facebook Ads, and Google to show period-over-period changes.
@@ -1522,4 +1392,67 @@ what_drove_results_prompt = ChatPromptTemplate.from_messages([
     ("system", what_drove_results_system_prompt),
     ("human", general_many_slides_info),
     ("human", what_drove_results_user_prompt),
+])
+
+
+here_is_what_we_delivered_system_prompt = """
+You are a Project Delivery Manager creating a summary slide titled "Here's What We Delivered for You". Your goal is to showcase the consistency and quality of social media work delivered over a specific timeframe.
+
+YOUR TASK:
+Analyze raw delivery logs and content descriptions to create a 4-segment timeline that summarizes the work delivered.
+
+INPUT DATA EXPLANATION:
+1. Delivery Data: A list of objects containing dates and post types.
+2. Content Data: A list of text descriptions of the actual posts created.
+
+STEP-BY-STEP GENERATION LOGIC:
+
+1. **Time Segmentation**:
+   - Sort the delivery logs by date (Earliest to Latest).
+   - Divide the total duration into exactly 4 distinct, chronological segments (intervals).
+   - Format the Date Range for each segment (e.g., "Sept 23 - Oct 5").
+   - CONSTRAINT: Max 30 characters.
+
+2. **Categorization (Strict Terminology)**:
+   - Analyze the `social_post_type` present within each specific time segment.
+   - Apply the following MAPPING RULES strictly:
+     * If type is "Monthly" or "Ongoing Posts" -> Output: "Ongoing Social Posts"
+     * If type is "Promotional" or "On-Demand" -> Output: "On-Demand Social Posts"
+     * If type is "Facebook Ads" -> Output: "Facebook Ads"
+   
+   - **SINGLE CATEGORY RULE**: 
+     * You must output ONLY ONE category per segment. 
+     * Do NOT combine them (e.g., do NOT write "Ongoing & On-Demand").
+     * If a segment contains mixed types (e.g., both Ongoing and Ads), select the **Primary** category that best matches the *Description* you are about to write for that segment.
+
+3. **Description Synthesis**:
+   - Look at the provided `zylo_post_content`.
+   - Select content that falls within the current time segment.
+   - Write ONE specific, high-impact sentence summarizing the content topics.
+   - **Be Specific**: Mention specific events, services, or themes found in the content (e.g., "Promoted the Druid Heights Community Health Fair event").
+   - **Avoid Generic Text**: Do not write "Posted various updates."
+   - CONSTRAINT: Max 148 characters.
+"""
+
+here_is_what_we_delivered_user_prompt = """
+Generate the delivery timeline based on the following data:
+
+<delivery_logs>
+{zylo_delivery_data}
+</delivery_logs>
+
+<content_descriptions>
+{zylo_post_content}
+</content_descriptions>
+
+**Execution Steps:**
+1. Split the total timeframe into 4 chronological blocks.
+2. For each block, identify the dominant post type based on the mapping rules (Ongoing Social Posts, On-Demand Social Posts, or Facebook Ads).
+3. Select a specific content theme from `<content_descriptions>` that occurred during that block.
+4. Generate the response ensuring no character limits are exceeded.
+"""
+
+here_is_what_we_delivered_prompt = ChatPromptTemplate.from_messages([
+    ("system", here_is_what_we_delivered_system_prompt),
+    ("human", here_is_what_we_delivered_user_prompt),
 ])
